@@ -42,3 +42,18 @@ func (apiCfg *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Reques
 	respondWithJSON(w, http.StatusCreated, databaseFeedToFeedModel(feed))
 	log.Printf("User %s created a new feed with ID %s successfully.", user.Name, feed.ID)
 }
+
+
+
+func (apiCfg *apiConfig) handlerGetAllFeeds(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Getting all feeds...")
+	feeds, err := apiCfg.DB.GetAllFeeds(r.Context())
+
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Creating user failed with error: %v", err))
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, databaseFeedsToFeedsModel(feeds))
+	log.Printf("Total feeds retrieved successfully: %d.", len(feeds))
+}
