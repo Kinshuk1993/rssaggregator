@@ -1,0 +1,14 @@
+-- +goose UP
+
+CREATE TABLE IF NOT EXISTS feeds (
+	id UUID PRIMARY KEY,
+	name TEXT NOT NULL,
+	created_at TIMESTAMP NOT NULL,
+	updated_at TIMESTAMP NOT NULL,
+	url TEXT UNIQUE NOT NULL,
+	userid UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- +goose DOWN
+
+DROP TABLE IF EXISTS feeds;
