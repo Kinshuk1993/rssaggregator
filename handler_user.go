@@ -45,3 +45,17 @@ func (apiCfg *apiConfig) handlerGetUserByAPIKey(w http.ResponseWriter, r *http.R
 	respondWithJSON(w, http.StatusOK, databaseUserToUserModel(user))
 	log.Printf("User retrieved successfully with the given API Key")
 }
+
+func (apiCfg *apiConfig) handlerGetPostsForUser(w http.ResponseWriter, r *http.Request, user database.User) {
+	log.Printf("Getting all posts for the user %s...", user.Name)
+	posts, err := apiCfg.DB.GetPostsForUser(r.Context(), database.GetPostsForUserParams{
+		UserID: user.ID,
+		Limit:  5,
+	})
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Getting posts for user failed with error: %v", err))
+		return
+	}
+	respondWithJSON(w, http.StatusOK, databasePostsToPostsModel(posts))
+	log.Printf("Posts for user %s retrieved successfully.", user.Name)
+}
