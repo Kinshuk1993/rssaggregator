@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/kinshuk1993/rssaggregator/internal/database"
 )
 
@@ -59,6 +62,35 @@ func scrapeFeed(wg *sync.WaitGroup, db *database.Queries, feed database.Feed) {
 
 	for _, item := range rssFeed.Channel.Item {
 		log.Printf("Scraped post %s on feed %s", item.Title, feed.Name)
+		description := sql.NullString{}
+		if item.Description != "" {
+			description.String = item.Description
+			description.Valid = true
+		}
+		publishedAt, err := time.Parse(time.RFC1123Z, item.PubDate)
+		if err != nil {
+			log.Printf("Error parsing published date %s for post %s: %v", item.PubDate, item.Title, err)
+			continue
+		}
+
+		_, err = db.CreatePost(context.Background(), database.CreatePostParams{
+			ID: uuid.New(),
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
+			Title: item.Title,
+			Description: description,
+			PublishedAt: publishedAt,
+			Url: item.Link,
+			FeedID: feed.ID,
+		})
+
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate key") {
+				log.Printf("Post %s for feed %s already exists, skipping", item.Title, feed.Name)
+				continue
+			}
+			log.Printf("Error saving post %s for feed %s: %v", item.Title, feed.Name, err)
+		}
 	}
 
 	log.Printf("Feed %s collected, %d posts found", feed.Name, len(rssFeed.Channel.Item))
